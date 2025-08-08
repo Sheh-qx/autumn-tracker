@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>秋招简历进度管理器</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+  <div id="root"></div>
+  <script type="text/babel">
+
+    const { useState, useEffect } = React;
+    const STORAGE_KEY = "autumn_recruitment_tracker_companies";
+    const TODO_KEY = "autumn_recruitment_tracker_todos";
+
+    function AutumnRecruitmentTracker() {
+      const [companies, setCompanies] = useState([]);
+      const [todos, setTodos] = useState([]);
+      const [companyName, setCompanyName] = useState("");
+      const [status, setStatus] = useState("");
+      const [industry, setIndustry] = useState("互联网");
+
+      useEffect(() => {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) setCompanies(JSON.parse(raw));
+        const t = localStorage.getItem(TODO_KEY);
+        if (t) setTodos(JSON.parse(t));
+      }, []);
+
+      useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(companies));
+      }, [companies]);
+
+      useEffect(() => {
+        localStorage.setItem(TODO_KEY, JSON.stringify(todos));
+      }, [todos]);
+
+      useEffect(() => {
+        if (typeof document === 'undefined') return;
+        if (document.head.querySelector('#autumn-tracker-style')) return;
+        const inputBase = 'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-200';
+        const s = document.createElement('style');
+        s.id = 'autumn-tracker-style';
+        s.innerHTML = `.input { ${inputBase} }`;
+        document.head.appendChild(s);
+      }, []);
+
+      const addCompany = () => {
+        if (!companyName || !status) return;
+        const newCompany = {
+          id: Date.now(),
+          name: companyName,
+          status,
+          industry,
+          date: new Date().toISOString()
+        };
+        setCompanies([...companies, newCompany]);
+        setCompanyName("");
+        setStatus("");
+      };
+
+      const addTodo = () => {
+        const task = prompt("输入待办事项:");
+        if (task) setTodos([...todos, { id: Date.now(), text: task, done: false }]);
+      };
+
+      const toggleTodo = (id) => {
+        setTodos(todos.map(t => t.id === id ? { ...t, done: !t.done } : t));
+      };
+
+      const removeTodo = (id) => {
+        setTodos(todos.filter(t => t.id !== id));
+      };
+
+      const statuses = ["已投递", "笔试", "面试", "Offer", "拒绝"];
+
+      return (
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">秋招简历进度管理器</h1>
+
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <h2 className="font-semibold mb-2">添加公司</h2>
+            <input className="input mb-2" placeholder="公司名称" value={companyName} onChange={e => setCompanyName(e.target.value)} />
+            <select className="input mb-2" value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">选择进度</option>
+              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select className="input mb-2" value={industry} onChange={e => setIndustry(e.target.value)}>
+              {["互联网", "金融", "制造", "咨询", "其他"].map(i => <option key={i} value={i}>{i}</option>)}
+            </select>
+            <button className="bg-blue-500 text-white px-4 py-2 rounded" onClick={addCompany}>添加</button>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <h2 className="font-semibold mb-2">已投递公司</h2>
+            {companies.length === 0 && <p className="text-gray-500">暂无记录</p>}
+            <ul>
+              {companies.map(c => (
+                <li key={c.id} className="border-b py-2">
+                  <div className="flex justify-between">
+                    <span>{c.name} - {c.status} ({c.industry})</span>
+                    <span className="text-sm text-gray-400">{new Date(c.date).toLocaleString()}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <h2 className="font-semibold mb-2">待办事项</h2>
+            <button className="bg-green-500 text-white px-3 py-1 rounded mb-2" onClick={addTodo}>添加待办</button>
+            {todos.map(t => (
+              <div key={t.id} className="flex items-center mb-1">
+                <input type="checkbox" checked={t.done} onChange={() => toggleTodo(t.id)} className="mr-2" />
+                <span className={t.done ? "line-through text-gray-400" : ""}>{t.text}</span>
+                <button className="ml-auto text-red-500" onClick={() => removeTodo(t.id)}>删除</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AutumnRecruitmentTracker />);
+
+  </script>
+</body>
+</html>
